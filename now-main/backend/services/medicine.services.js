@@ -32,5 +32,12 @@ module.exports.findMedicineByName = async (shop_name, medicine_name) => {
         throw new Error('Shop not found');
     }
 
-    return shop.medicines.find(med => med.medicine_name === medicine_name);
+  
+
+    const medicine = shop.medicines.find(med => med.medicine_name === medicine_name);
+    if (!medicine) {
+        throw new Error('Medicine not found');
+    }
+
+    return medicine;
 };
