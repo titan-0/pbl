@@ -1,5 +1,5 @@
 const usermodel = require('../models/user.model');
-const captainmodel = require('../models/captain.model'); // Add this line
+const captainmodel = require('../models/captain.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const blacklisttokenmodel = require('../models/blacklist.model');
@@ -38,7 +38,7 @@ module.exports.authcaptain = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const captain = await captainmodel.findById(decoded._id);
 
-        req.captain = captain; // Add this line
+        req.captain = captain;
 
         return next();
     } catch (err) {
