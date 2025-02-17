@@ -1,4 +1,5 @@
 const captainmodel = require('../models/captain.model');
+const ShopModel = require('../models/medicaldata');
 
 module.exports.createcaptain = async ({
     shopname,
@@ -13,6 +14,14 @@ module.exports.createcaptain = async ({
 
     // Hash the password
     const hashedPassword = await captainmodel.hashpassword(password);
+
+    // Create the shop entry
+    const newShop = new ShopModel({
+        shop_name: shopname,
+        medicines: []
+    });
+
+    await newShop.save();
 
     const captain = new captainmodel({
         shopname,
