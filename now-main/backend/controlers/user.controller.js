@@ -3,6 +3,7 @@ const userservies = require('../services/user.services');
 const { validationResult } = require('express-validator');
 const blacklisttokenmodel = require('../models/blacklist.model');
 const medi = require('../services/medicine.services');
+const { findNearestMedicinesByName } = require('../services/medicine.services');
 
 module.exports.registeruser = async (req, res, next) => {
     const errors = validationResult(req);
@@ -79,6 +80,33 @@ module.exports.search = async (req, res, next) => {
         return res.status(404).json({ error: error.message });
     }
 }
+
+module.exports.searchNearestMedicine = async (req, res) => {
+    try {
+        const { medicine_name, latitude, longitude } = req.body;
+
+        if (!medicine_name || !latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required parameters'
+            });
+        }
+
+        const searchResult = await findNearestMedicinesByName(
+            { latitude, longitude },
+            medicine_name
+        );
+
+        return res.status(200).json(searchResult);
+
+    } catch (error) {
+        console.error('Search error:', error);
+        return res.status(404).json({
+            success: false,
+            message: error.message || 'No medicine found in nearby stores'
+        });
+    }
+};
 
 
 

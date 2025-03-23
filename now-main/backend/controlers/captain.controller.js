@@ -3,68 +3,127 @@ const { validationResult } = require('express-validator');
 const blacklistTokenModel = require('../models/blacklist.model');
 const medicineservice = require('../services/medicine.services');
 const ShopModel = require('../models/medicaldata');
+const captainmodel = require('../models/captain.model'); // Add this line at the top
 
 module.exports.registercaptain = async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { shopname, fullname, email, password, shop } = req.body;
-
     try {
-        // Check if the captain is already registered
-        const isCaptainExist = await captainService.findCaptainByEmail(email);
-        if (isCaptainExist) {
-            return res.status(400).json({ message: 'Captain already exists' });
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        // Create new captain entry using the service
-        const newCaptain = await captainService.createcaptain({
+        const { shopname, fullname, email, password, phoneNumber, shop } = req.body;
+
+        // Debug log
+        console.log('Registration attempt:', {
+            shopname,
+            email,
+            phoneNumber,
+            shop_address: shop.shop_address,
+            coordinates: shop.location.coordinates
+        });
+
+        // Check if captain exists
+        const existingCaptain = await captainmodel.findOne({ email });
+        if (existingCaptain) {
+            return res.status(400).json({ message: 'Email already registered' });
+        }
+
+        // Create new shop in medical data
+        const newShopData = new ShopModel({
+            shop_name: shopname,
+            medicines: []
+        });
+        await newShopData.save();
+
+        // Hash password
+        const hashedPassword = await captainmodel.hashpassword(password);
+
+        // Create new captain
+        const newCaptain = new captainmodel({
             shopname,
             fullname,
             email,
-            password,
-            shop
+            password: hashedPassword,
+            phoneNumber,
+            shop: {
+                shop_address: shop.shop_address,
+                gstNumber: shop.gstNumber,
+                licenseNumber: shop.licenseNumber,
+                services: shop.services,
+                location: {
+                    type: 'Point',
+                    coordinates: shop.location.coordinates
+                }
+            }
         });
 
-        // Generate authentication token
-        const token = newCaptain.generateAuthToken();
-        res.cookie('token', token, { httpOnly: true });
+        await newCaptain.save();
+        console.log('Captain saved successfully');
 
-        return res.status(201).json({ token, captain: newCaptain });
+        // Generate token
+        const token = newCaptain.generateAuthToken();
+        
+        // Remove password from response
+        newCaptain.password = undefined;
+
+        return res.status(201).json({
+            success: true,
+            token,
+            captain: newCaptain
+        });
     } catch (error) {
-        return next(error);
+        console.error('Registration error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Internal server error'
+        });
     }
 };
 
 module.exports.logincaptain = async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password } = req.body;
-
     try {
-        const captain = await captainService.findCaptainByEmail(email, true);
-        if (!captain) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        // Check password match
+        const { email, password } = req.body;
+        console.log('Login attempt for:', email); // Debug log
+
+        // Find captain and include password
+        const captain = await captainmodel.findOne({ email }).select('+password');
+        if (!captain) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+
+        // Verify password
         const isMatch = await captain.comparepassword(password);
         if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
         }
 
-        // Generate authentication token
+        // Generate token
         const token = captain.generateAuthToken();
-        res.cookie('token', token, { httpOnly: true });
+        captain.password = undefined; // Remove password from response
 
-        return res.status(200).json({ token, captain });
+        return res.status(200).json({
+            success: true,
+            token,
+            captain
+        });
     } catch (error) {
-        return next(error);
+        console.error('Login error:', error); // Debug log
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 };
 

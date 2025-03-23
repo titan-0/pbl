@@ -1,91 +1,93 @@
-const mongoose=require('mongoose');
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const captainschema = new mongoose.Schema({
-    shopname:{
-        type:String,
-        required: true,
-        minlength:[3,'Shop name must be atleast 3 characters long']
+const captainSchema = new mongoose.Schema({
+    shopname: {
+        type: String,
+        required: [true, 'Shop name is required'],
+        unique: true,
+        minlength: [3, 'Shop name must be at least 3 characters long']
     },
-    fullname:{
-        firstname:{
-            type:String,
-            required: true,
-            minlength:[3,'First name must be atleast 3 characters long']
+    fullname: {
+        firstname: {
+            type: String,
+            required: [true, 'First name is required'],
+            minlength: [3, 'First name must be at least 3 characters long']
         },
-        lastname:{
-            type:String,
-            minlength:[3,'Last name must be atleast 3 characters long']
+        lastname: {
+            type: String,
+            minlength: [3, 'Last name must be at least 3 characters long']
         }
     },
-    email:{
-        type:String,
-        required: true,
+    email: {
+        type: String,
+        required: [true, 'Email is required'],
         unique: true,
         lowercase: true,
-        match:[/^\S+@\S+\.\S+$/,'Please enter a valid email']
+        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
     },
-    password:{
-        type:String,
-        required: true,
-        select:false,
-        minlength:[6,'password must be of length 6 or greater than 6']
+    password: {
+        type: String,
+        required: [true, 'Password is required'],
+        select: false,
+        minlength: [6, 'Password must be at least 6 characters long']
     },
-    socketid:{
-        type:String
+    phoneNumber: {
+        type: String,
+        required: [true, 'Phone number is required'],
+        match: [/^\d{10}$/, 'Phone number must be exactly 10 digits']
     },
-    status:{
-        type:String,
-        ennum:['active','inactive'],
-        default:'inactive',
-    },
-    shop:{
-        shop_address:{
-        type:String,
-        required: true,
-        minlength:[3,' Shop address must be atleast 3 characters long']
+    shop: {
+        shop_address: {
+            type: String,
+            required: [true, 'Shop address is required'],
+            minlength: [3, 'Shop address must be at least 3 characters long']
         },
-        
-        gstNumber:{
-            type:Number,
-            required: true,
-            min:[1,'Give valid GST number']
+        gstNumber: {
+            type: String,
+            required: [true, 'GST number is required'],
+            match: [/^[0-9A-Z]{15}$/, 'GST Number must be exactly 15 characters']
         },
-        licenseNumber:{
-            type:Number,
-            required: true,
-            min:[1,'Give valid licence number']
+        licenseNumber: {
+            type: Number,
+            required: [true, 'License number is required'],
+            min: [1, 'Give valid license number']
         },
         services: {
-            type: [String],  // Example: ["Home Delivery", "Online Orders"]
+            type: [String],
             enum: ['Home Delivery', 'Online Orders', 'Emergency Medicines', 'Insurance Accepted'],
             default: []
         },
-        location:{
-            lat:{
-                type:Number,
+        location: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point'
             },
-            lng:{
-                type:Number,
+            coordinates: {
+                type: [Number],
+                required: [true, 'Location coordinates are required']
             }
         }
     }
-})
+});
 
-captainschema.methods.generateAuthToken = function(){
-    const token = jwt.sign({_id:this._id},process.env.JWT_SECRET,{expiresIn:'24h'});
-    return token;
-}
-captainschema.methods.comparepassword = async function(password){
-    const isMatch = await bcrypt.compare(password,this.password);
-    return isMatch;
-}
-captainschema.statics.hashpassword = async function(password){
-    const hashpassword = await bcrypt.hash(password,10);
-    return hashpassword;
-}
+// Add the 2dsphere index
+captainSchema.index({ "shop.location": "2dsphere" });
 
-const captainmodel = mongoose.model('medical',captainschema);
+// Methods
+captainSchema.methods.generateAuthToken = function() {
+    return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+};
 
-module.exports = captainmodel;
+captainSchema.methods.comparepassword = async function(password) {
+    return await bcrypt.compare(password, this.password);
+};
+
+captainSchema.statics.hashpassword = async function(password) {
+    return await bcrypt.hash(password, 10);
+};
+
+const Captain = mongoose.model('captain', captainSchema);
+module.exports = Captain;
