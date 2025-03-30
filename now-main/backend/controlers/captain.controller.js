@@ -3,7 +3,33 @@ const { validationResult } = require('express-validator');
 const blacklistTokenModel = require('../models/blacklist.model');
 const medicineservice = require('../services/medicine.services');
 const ShopModel = require('../models/medicaldata');
-const captainmodel = require('../models/captain.model'); // Add this line at the top
+const captainmodel = require('../models/captain.model');
+ // Add this line at the top
+
+ const jwt = require('jsonwebtoken');
+ const Captain = require('../models/captain.model');
+ 
+ module.exports.getCaptain = async (req, res) => {
+   try {
+     const authHeader = req.headers.authorization;
+     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+       return res.status(401).json({ message: 'Authorization header missing or invalid' });
+     }
+ 
+     const token = authHeader.split(' ')[1];
+     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+ 
+     const captain = await Captain.findById(decoded._id);
+     if (!captain) {
+       return res.status(404).json({ message: 'Captain not found' });
+     }
+ 
+     res.json({ captain });
+   } catch (error) {
+     console.error('Error fetching captain data:', error);
+     res.status(500).json({ message: 'Internal server error' });
+   }
+ };
 
 module.exports.registercaptain = async (req, res, next) => {
     try {
@@ -14,27 +40,17 @@ module.exports.registercaptain = async (req, res, next) => {
 
         const { shopname, fullname, email, password, phoneNumber, shop } = req.body;
 
-        // Debug log
-        console.log('Registration attempt:', {
-            shopname,
-            email,
-            phoneNumber,
-            shop_address: shop.shop_address,
-            coordinates: shop.location.coordinates
-        });
+        // Validate coordinates
+        const [longitude, latitude] = shop.location.coordinates;
+        if (typeof longitude !== 'number' || typeof latitude !== 'number') {
+            return res.status(400).json({ message: 'Coordinates must be numbers' });
+        }
 
         // Check if captain exists
         const existingCaptain = await captainmodel.findOne({ email });
         if (existingCaptain) {
             return res.status(400).json({ message: 'Email already registered' });
         }
-
-        // Create new shop in medical data
-        const newShopData = new ShopModel({
-            shop_name: shopname,
-            medicines: []
-        });
-        await newShopData.save();
 
         // Hash password
         const hashedPassword = await captainmodel.hashpassword(password);
@@ -53,24 +69,21 @@ module.exports.registercaptain = async (req, res, next) => {
                 services: shop.services,
                 location: {
                     type: 'Point',
-                    coordinates: shop.location.coordinates
+                    coordinates: [longitude, latitude]
                 }
             }
         });
 
         await newCaptain.save();
-        console.log('Captain saved successfully');
 
         // Generate token
         const token = newCaptain.generateAuthToken();
-        
-        // Remove password from response
-        newCaptain.password = undefined;
-
+        console.log('Captain registered successfully:', newCaptain)
         return res.status(201).json({
             success: true,
             token,
             captain: newCaptain
+           
         });
     } catch (error) {
         console.error('Registration error:', error);

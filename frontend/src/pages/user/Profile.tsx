@@ -1,7 +1,9 @@
 import React from 'react';
 import { User, MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { useUser } from '../../context/userContext';
 
 const UserProfile = () => {
+  const { user } = useUser();
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,7 +15,7 @@ const UserProfile = () => {
               </div>
               <div className="ml-4">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  John Doe
+                  {user?.fullname.firstname} {user?.fullname.lastname}
                 </h3>
                 <p className="mt-1 max-w-2xl text-sm text-gray-500">
                   Member since March 2024
@@ -37,7 +39,7 @@ const UserProfile = () => {
                   <Mail className="h-5 w-5 mr-2" />
                   Email
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900">john.doe@example.com</dd>
+                <dd className="mt-1 text-sm text-gray-900">{user.email}</dd>
               </div>
               
               <div className="sm:col-span-2">

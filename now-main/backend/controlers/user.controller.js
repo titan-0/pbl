@@ -93,7 +93,7 @@ module.exports.searchNearestMedicine = async (req, res) => {
         }
 
         const searchResult = await findNearestMedicinesByName(
-            { latitude, longitude },
+            { longitude ,latitude},
             medicine_name
         );
 

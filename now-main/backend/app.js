@@ -11,7 +11,10 @@ const medicineroutes = require('./routes/medical.routes');
 const cookieparser = require('cookie-parser');
 connecttodb();
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Your frontend URL
+    credentials: true
+  }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieparser());

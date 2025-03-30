@@ -32,7 +32,7 @@ module.exports.createcaptain = async ({
         email,
         password: hashedPassword,
         shop: {
-            shop_address: shop.shop_address,
+            // shop_address: shop.shop_address,
             gstNumber: shop.gstNumber,
             licenseNumber: shop.licenseNumber,
             services: shop.services,

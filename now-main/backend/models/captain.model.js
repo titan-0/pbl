@@ -56,11 +56,11 @@ const captainSchema = new mongoose.Schema({
         },
         services: {
             type: [String],
-            enum: ['Home Delivery', 'Online Orders', 'Emergency Medicines', 'Insurance Accepted'],
+            enum: ['Home Delivery', 'Online Orders'],
             default: []
         },
         location: {
-            type: {
+            type: { 
                 type: String,
                 enum: ['Point'],
                 default: 'Point'
