@@ -73,8 +73,13 @@ module.exports.registercaptain = async (req, res, next) => {
                 }
             }
         });
-
         await newCaptain.save();
+        const newShop = new ShopModel({
+            email,
+            medicines: [] // Initialize with an empty array of medicines
+        })
+        await newShop.save();
+       
 
         // Generate token
         const token = newCaptain.generateAuthToken();
@@ -169,12 +174,12 @@ module.exports.addmedicine = async (req, res, next) => {
         return res.status(401).json({ error: 'Unauthorized: Please log in' });
     }
 
-    const { shopname } = req.captain; // Get the shop name from the logged-in captain
+    const { email } = req.captain; 
     const { medicine_name, category, price, quantity } = req.body;
 
     try {
         // Find the shop by shop_name (use req.captain.shopname)
-        const shop = await ShopModel.findOne({ shop_name: shopname });
+        const shop = await ShopModel.findOne({ email: email });
         if (!shop) {
             return res.status(404).json({ error: 'Shop not found' });
         }

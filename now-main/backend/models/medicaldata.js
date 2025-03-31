@@ -24,10 +24,12 @@ const medicineSchema = new mongoose.Schema({
 });
 
 const shopSchema = new mongoose.Schema({
-    shop_name: {
+    email: {
         type: String,
-        required: [true, 'Shop name is required'],
-        unique: true
+        required: [true, 'Email is required'],
+        unique: true,
+        lowercase: true,
+        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
     },
     medicines: [medicineSchema] // Medicines stored as an array
 });

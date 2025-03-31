@@ -6,7 +6,7 @@ const captainSchema = new mongoose.Schema({
     shopname: {
         type: String,
         required: [true, 'Shop name is required'],
-        unique: true,
+        
         minlength: [3, 'Shop name must be at least 3 characters long']
     },
     fullname: {

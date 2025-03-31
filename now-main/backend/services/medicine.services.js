@@ -20,7 +20,7 @@ const findMedicineByName = async (shop_name, medicine_name) => {
     return medicine;
 };
 
-const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 5) => {
+const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 25) => {
     if (!userLocation || !medicine_name) {
         throw new Error('Missing required parameters: userLocation and medicine_name');
     }
@@ -32,7 +32,7 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
     });
 
     // Validate location
-    const validatedLocation = checkLocation(userLocation.latitude, userLocation.longitude);
+    const validatedLocation = checkLocation(userLocation.longitude,userLocation.latitude);
 
     // Find shops within radius
     const shops = await Captain.find({

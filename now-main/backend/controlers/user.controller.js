@@ -95,6 +95,7 @@ module.exports.searchNearestMedicine = async (req, res) => {
         const searchResult = await findNearestMedicinesByName(
             { longitude ,latitude},
             medicine_name
+            
         );
 
         return res.status(200).json(searchResult);
