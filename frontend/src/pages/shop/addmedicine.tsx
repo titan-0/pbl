@@ -2,9 +2,17 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Plus, Trash2, Save, AlertCircle, CheckCircle2, FileSpreadsheet } from 'lucide-react';
 
+interface Medicine {
+  medicine_name: string;
+  category: string;
+  price: string;
+  quantity: string;
+  error?: string;
+}
+
 const AddMedicine = () => {
-  const [medicines, setMedicines] = useState([
-    { medicine_name: '', category: '', price: '', quantity: '' },
+  const [medicines, setMedicines] = useState<Medicine[]>([
+    { medicine_name: '', category: '', price: '', quantity: '' }
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -13,7 +21,50 @@ const AddMedicine = () => {
   const handleInputChange = (index: number, field: string, value: string) => {
     const updatedMedicines = [...medicines];
     updatedMedicines[index][field] = value;
+    updatedMedicines[index].error = '';
     setMedicines(updatedMedicines);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, fieldName: string) => {
+    const fields = ['medicine_name', 'category', 'price', 'quantity'];
+    const currentFieldIndex = fields.indexOf(fieldName);
+
+    switch (e.key) {
+      case 'Enter':
+      case 'ArrowDown':
+        e.preventDefault();
+        const nextRowInput = document.querySelector(
+          `input[data-row="${rowIndex + 1}"][data-field="${fieldName}"]`
+        ) as HTMLElement;
+        if (nextRowInput) {
+          nextRowInput.focus();
+        } else if (e.key === 'Enter') {
+          addRow();
+          setTimeout(() => {
+            const newInput = document.querySelector(
+              `input[data-row="${rowIndex + 1}"][data-field="${fieldName}"]`
+            ) as HTMLElement;
+            newInput?.focus();
+          }, 0);
+        }
+        break;
+      case 'ArrowRight':
+        if (currentFieldIndex < fields.length - 1) {
+          const nextFieldInput = document.querySelector(
+            `input[data-row="${rowIndex}"][data-field="${fields[currentFieldIndex + 1]}"]`
+          ) as HTMLElement;
+          nextFieldInput?.focus();
+        }
+        break;
+      case 'ArrowLeft':
+        if (currentFieldIndex > 0) {
+          const prevFieldInput = document.querySelector(
+            `input[data-row="${rowIndex}"][data-field="${fields[currentFieldIndex - 1]}"]`
+          ) as HTMLElement;
+          prevFieldInput?.focus();
+        }
+        break;
+    }
   };
 
   const addRow = () => {
@@ -21,26 +72,35 @@ const AddMedicine = () => {
   };
 
   const removeRow = (index: number) => {
-    const updatedMedicines = medicines.filter((_, i) => i !== index);
-    setMedicines(updatedMedicines);
+    if (medicines.length > 1) {
+      const updatedMedicines = medicines.filter((_, i) => i !== index);
+      setMedicines(updatedMedicines);
+    }
   };
 
   const validateInputs = () => {
-    for (const medicine of medicines) {
+    let isValid = true;
+    const updatedMedicines = medicines.map(medicine => {
       if (!medicine.medicine_name.trim() || medicine.medicine_name.length < 3) {
-        return 'Medicine name must be at least 3 characters long.';
+        isValid = false;
+        return { ...medicine, error: 'Medicine name must be at least 3 characters long' };
       }
       if (!medicine.category.trim() || medicine.category.length < 3) {
-        return 'Category must be at least 3 characters long.';
+        isValid = false;
+        return { ...medicine, error: 'Category must be at least 3 characters long' };
       }
       if (!medicine.price || isNaN(Number(medicine.price)) || Number(medicine.price) <= 0) {
-        return 'Price must be a positive number.';
+        isValid = false;
+        return { ...medicine, error: 'Price must be a positive number' };
       }
       if (!medicine.quantity || isNaN(Number(medicine.quantity)) || Number(medicine.quantity) < 0) {
-        return 'Quantity must be a non-negative number.';
+        isValid = false;
+        return { ...medicine, error: 'Quantity must be a non-negative number' };
       }
-    }
-    return null;
+      return { ...medicine, error: '' };
+    });
+    setMedicines(updatedMedicines);
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -49,9 +109,7 @@ const AddMedicine = () => {
     setError('');
     setSuccess('');
 
-    const validationError = validateInputs();
-    if (validationError) {
-      setError(validationError);
+    if (!validateInputs()) {
       setIsSubmitting(false);
       return;
     }
@@ -65,12 +123,19 @@ const AddMedicine = () => {
       }
 
       const backendUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:5000';
+      const successfulMedicines: string[] = [];
+      const failedMedicines: string[] = [];
 
       for (const medicine of medicines) {
         try {
           const response = await axios.post(
             `${backendUrl}/medicines/addmedicine`,
-            medicine,
+            {
+              medicine_name: medicine.medicine_name,
+              category: medicine.category,
+              price: Number(medicine.price),
+              quantity: Number(medicine.quantity),
+            },
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -80,24 +145,24 @@ const AddMedicine = () => {
           );
 
           if (response.status === 201 || response.status === 200) {
-            console.log('Medicine added successfully:', medicine.medicine_name);
-          } else {
-            throw new Error(`Failed to add ${medicine.medicine_name}.`);
+            successfulMedicines.push(medicine.medicine_name);
           }
-        } catch (err: any) {
-          console.error(`Error adding medicine: ${medicine.medicine_name}`, err);
-          setError(`Failed to add ${medicine.medicine_name}. Please try again.`);
+        } catch (err) {
+          failedMedicines.push(medicine.medicine_name);
         }
       }
 
-      setSuccess('All medicines added successfully!');
-      setMedicines([{ medicine_name: '', category: '', price: '', quantity: '' }]);
+      if (failedMedicines.length === 0) {
+        setSuccess('All medicines added successfully!');
+        setMedicines([{ medicine_name: '', category: '', price: '', quantity: '' }]);
+      } else {
+        setError(`Failed to add: ${failedMedicines.join(', ')}`);
+        if (successfulMedicines.length > 0) {
+          setSuccess(`Successfully added: ${successfulMedicines.join(', ')}`);
+        }
+      }
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.errors?.[0]?.msg ||
-        'Failed to add medicines. Please check your connection and try again.';
-      setError(errorMessage);
+      setError(err.response?.data?.message || 'Failed to process request');
     } finally {
       setIsSubmitting(false);
     }
@@ -167,15 +232,22 @@ const AddMedicine = () => {
                             type="text"
                             value={medicine.medicine_name}
                             onChange={(e) => handleInputChange(index, 'medicine_name', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'medicine_name')}
+                            data-row={index}
+                            data-field="medicine_name"
                             className="block w-full border-0 p-1.5 text-gray-900 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
                             placeholder="Enter medicine name"
                           />
+                          {medicine.error && <p className="text-xs text-red-600">{medicine.error}</p>}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2 text-sm">
                           <input
                             type="text"
                             value={medicine.category}
                             onChange={(e) => handleInputChange(index, 'category', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'category')}
+                            data-row={index}
+                            data-field="category"
                             className="block w-full border-0 p-1.5 text-gray-900 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
                             placeholder="Enter category"
                           />
@@ -185,6 +257,9 @@ const AddMedicine = () => {
                             type="number"
                             value={medicine.price}
                             onChange={(e) => handleInputChange(index, 'price', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'price')}
+                            data-row={index}
+                            data-field="price"
                             className="block w-full border-0 p-1.5 text-gray-900 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
                             placeholder="0.00"
                           />
@@ -194,6 +269,9 @@ const AddMedicine = () => {
                             type="number"
                             value={medicine.quantity}
                             onChange={(e) => handleInputChange(index, 'quantity', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
+                            data-row={index}
+                            data-field="quantity"
                             className="block w-full border-0 p-1.5 text-gray-900 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
                             placeholder="0"
                           />
