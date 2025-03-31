@@ -12,6 +12,7 @@ import OrderTracking from './pages/user/OrderTracking';
 import UserProfile from './pages/user/Profile';
 import ShopDashboard from './pages/shop/Dashboard';
 import ShopProfile from './pages/shop/profile';
+import AddMedicine from './pages/shop/addmedicine';
 
 function App() {
   // Check for user's preferred color scheme
@@ -32,7 +33,7 @@ function App() {
             <Route path="/user/signup" element={<UserSignup />} />
             <Route path="/shop/login" element={<ShopLogin />} />
             <Route path="/shop/profile" element={<ShopProfile />} />
-            
+            <Route path="/shop/add-medicine" element={<AddMedicine />} />
             <Route path="/shop/signup" element={<ShopSignup />} />
             <Route path="/medicine-search" element={<MedicineSearch />} />
             <Route path="/order-tracking" element={<OrderTracking />} />
