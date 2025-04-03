@@ -1,24 +1,22 @@
-const checkLocation = (latitude, longitude) => {
-    if (!latitude || !longitude) {
-        throw new Error('Latitude and longitude are required');
+const checkLocation = (longitude, latitude) => {
+    // Validate coordinates
+    if (!longitude || !latitude) {
+        throw new Error('Both longitude and latitude are required');
     }
 
-    const lat = parseFloat(latitude);
-    const lng = parseFloat(longitude);
+    const lng = Number(longitude);
+    const lat = Number(latitude);
 
-    if (isNaN(lat) || isNaN(lng)) {
-        throw new Error('Invalid location coordinates');
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+        throw new Error('Invalid longitude. Must be between -180 and 180');
     }
 
-    if (lat < -90 || lat > 90) {
-        throw new Error('Invalid latitude value');
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+        throw new Error('Invalid latitude. Must be between -90 and 90');
     }
 
-    if (lng < -180 || lng > 180) {
-        throw new Error('Invalid longitude value');
-    }
-
-    return { latitude: lat, longitude: lng };
+    // Return the validated coordinates in the correct order
+    return { longitude: lng, latitude: lat };
 };
 
 module.exports = { checkLocation };

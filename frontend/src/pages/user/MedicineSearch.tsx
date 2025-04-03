@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Star, Plus, Navigation } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 interface MedicineResult {
-  _id: string;
-  medicineName: string;
-  price: number;
-  stock: number;
-  shop: {
-    shopname: string;
-    shop_address: string;
-    distance?: number;
+  shop_name: string;
+  shop_address: string;
+  medicine: {
+    name: string;
+    category: string;
+    price: number;
+    quantity: number;
   };
+  coordinates: [number, number];
+  distance: string;
+  duration: number;
 }
 
 interface Coordinates {
@@ -29,6 +32,7 @@ const MedicineSearch = () => {
     longitude: null
   });
   const [locationError, setLocationError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Get user location when component mounts
@@ -79,7 +83,7 @@ const MedicineSearch = () => {
           }
         }
       );
-      setResults(response.data.medicines);
+      setResults(response.data.data); // Update to match the backend response structure
     } catch (err: any) {
       if (err.response?.status === 401) {
         setError('Your session has expired. Please log in again.');
@@ -90,6 +94,11 @@ const MedicineSearch = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlequery = (medicineName: string) => {
+    // Navigate to the specific page with the medicine name as a query parameter
+    navigate(`/medicine-details?name=${encodeURIComponent(medicineName)}`);
   };
 
   return (
@@ -148,33 +157,34 @@ const MedicineSearch = () => {
         <div className="mt-8">
           {results.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((medicine) => (
+              {results.map((medicine, index) => (
                 <div 
-                  key={medicine._id}
+                  key={index}
                   className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+                  onClick={() => handlequery(medicine.medicine.name)} // Pass the medicine name to handlequery
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {medicine.medicineName}
+                        {medicine.medicine.name}
                       </h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        Available at {medicine.shop.shopname}
+                        Available at {medicine.shop_name}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-primary-600">
-                        ₹{medicine.price}
+                        ₹{medicine.medicine.price}
                       </p>
                       <p className="text-sm text-gray-500">
-                        Stock: {medicine.stock}
+                        Stock: {medicine.medicine.quantity}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-4 flex items-start text-sm text-gray-500">
                     <MapPin className="h-5 w-5 text-gray-400 shrink-0 mt-0.5 mr-2" />
-                    <p>{medicine.shop.shop_address}</p>
+                    <p>{medicine.shop_address}</p>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between">
@@ -189,7 +199,7 @@ const MedicineSearch = () => {
                         ))}
                       </div>
                       <span className="ml-2 text-sm text-gray-500">
-                        {medicine.shop.distance ? `${medicine.shop.distance.toFixed(1)} km away` : 'Distance not available'}
+                        {medicine.distance ? `${medicine.distance} km away` : 'Distance not available'}
                       </span>
                     </div>
                     <button className="flex items-center px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700">

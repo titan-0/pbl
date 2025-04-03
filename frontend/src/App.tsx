@@ -13,6 +13,7 @@ import UserProfile from './pages/user/Profile';
 import ShopDashboard from './pages/shop/Dashboard';
 import ShopProfile from './pages/shop/profile';
 import AddMedicine from './pages/shop/addmedicine';
+import MedicineDetails from './pages/user/MedicineDetails';
 
 function App() {
   // Check for user's preferred color scheme
@@ -39,6 +40,7 @@ function App() {
             <Route path="/order-tracking" element={<OrderTracking />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/shop/dashboard" element={<ShopDashboard />} />
+            <Route path="/medicine-details" element={<MedicineDetails />} />
           </Routes>
         </main>
         <Footer />

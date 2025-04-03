@@ -31,8 +31,26 @@ const shopSchema = new mongoose.Schema({
         lowercase: true,
         match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
     },
+    location: {
+        type: { 
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            required: [true, 'Location coordinates are required']
+        }
+    },
+    shopname: {
+        type: String,
+        required: [true, 'Shop name is required'],
+        minlength: [3, 'Shop name must be at least 3 characters long']
+    },
     medicines: [medicineSchema] // Medicines stored as an array
 });
+shopSchema.index({ "location": "2dsphere" });
+
 
 const ShopModel = mongoose.model('Shop', shopSchema);
 

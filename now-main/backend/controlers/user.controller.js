@@ -83,8 +83,26 @@ module.exports.search = async (req, res, next) => {
 
 module.exports.searchNearestMedicine = async (req, res) => {
     try {
+        // Validation check
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+
+        // Auth check
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Please log in'
+            });
+        }
+
         const { medicine_name, latitude, longitude } = req.body;
 
+        // Input validation
         if (!medicine_name || !latitude || !longitude) {
             return res.status(400).json({
                 success: false,
@@ -93,18 +111,17 @@ module.exports.searchNearestMedicine = async (req, res) => {
         }
 
         const searchResult = await findNearestMedicinesByName(
-            { longitude ,latitude},
+            { latitude, longitude },
             medicine_name
-            
         );
 
         return res.status(200).json(searchResult);
 
     } catch (error) {
         console.error('Search error:', error);
-        return res.status(404).json({
+        return res.status(error.status || 500).json({
             success: false,
-            message: error.message || 'No medicine found in nearby stores'
+            message: error.message || 'Internal server error'
         });
     }
 };

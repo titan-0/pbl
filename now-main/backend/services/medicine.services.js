@@ -1,10 +1,10 @@
 const { checkLocation } = require('../utils/location');
 const Captain = require('../models/captain.model');
-const ShopModel = require('../models/medicaldata');
+
 const mapService = require('./map.services');
 
 const findMedicineByName = async (shop_name, medicine_name) => {
-    const shop = await ShopModel.findOne({ shop_name });
+    const shop = await Captain.findOne({ shop_name });
     if (!shop) {
         throw new Error(`Shop '${shop_name}' not found`);
     }
@@ -22,19 +22,18 @@ const findMedicineByName = async (shop_name, medicine_name) => {
 
 const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 25) => {
     if (!userLocation || !medicine_name) {
-        throw new Error('Missing required parameters: userLocation and medicine_name');
+        const error = new Error('Missing required parameters: userLocation and medicine_name');
+        error.status = 400;
+        throw error;
     }
 
-    console.log('Search Parameters:', {
-        medicine_name,
-        location: userLocation,
-        radius
-    });
+    console.log('Validated user location:', userLocation);
+    console.log('Searching for medicine:', medicine_name);
 
-    // Validate location
-    const validatedLocation = checkLocation(userLocation.longitude,userLocation.latitude);
+    const validatedLocation = checkLocation(userLocation.longitude, userLocation.latitude);
 
-    // Find shops within radius
+    console.log('Validated location:', validatedLocation);
+
     const shops = await Captain.find({
         'shop.location': {
             $nearSphere: {
@@ -42,79 +41,46 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
                     type: 'Point',
                     coordinates: [validatedLocation.longitude, validatedLocation.latitude]
                 },
-                $maxDistance: radius * 1000
+                $maxDistance: radius * 1000 // Convert km to meters
             }
         }
-    }).select('-password');
+    }).select('shopname shop.location shop.shop_address medicines');
 
-    console.log(`Found ${shops.length} shops within ${radius}km radius:`, 
-        shops.map(s => ({
-            shopname: s.shopname,
-            coordinates: s.shop.location.coordinates
-        }))
-    );
+    console.log(`Shops found: ${shops.length}`);
+    if (!shops.length) {
+        const error = new Error('No shops found in the specified radius');
+        error.status = 404;
+        throw error;
+    }
 
     const results = [];
     const errors = [];
-    let medicineFoundCount = 0;
 
-    // Check each shop for the medicine
     for (const shop of shops) {
         try {
             console.log(`Checking shop: ${shop.shopname}`);
-            const shopData = await ShopModel.findOne({ shop_name: shop.shopname });
             
-            if (!shopData) {
-                console.log(`No shop data found for: ${shop.shopname}`);
-                errors.push(`Shop data not found: ${shop.shopname}`);
-                continue;
-            }
-
-            if (!shopData.medicines || shopData.medicines.length === 0) {
+            if (!shop.medicines || shop.medicines.length === 0) {
                 console.log(`No medicines found in shop: ${shop.shopname}`);
                 errors.push(`No medicines in shop: ${shop.shopname}`);
                 continue;
             }
 
-            const medicine = shopData.medicines.find(med => 
+            const medicine = shop.medicines.find(med =>
                 med.medicine_name.toLowerCase().includes(medicine_name.toLowerCase())
             );
 
             if (!medicine) {
-                console.log(`Medicine '${medicine_name}' not found in: ${shop.shopname}`);
-                errors.push(`Medicine not available in: ${shop.shopname}`);
+                console.log(`Medicine '${medicine_name}' not found in shop: ${shop.shopname}`);
                 continue;
             }
 
-            medicineFoundCount++;
+            console.log(`Medicine '${medicine_name}' found in shop: ${shop.shopname}`);
 
-            // Format coordinates properly for the map service
+            // Get the distance between the user and the shop using mapService
             const originCoords = `${validatedLocation.latitude},${validatedLocation.longitude}`;
             const destCoords = `${shop.shop.location.coordinates[1]},${shop.shop.location.coordinates[0]}`;
-
-            // Calculate simple distance first
-            const R = 6371; // Earth's radius in km
-            const dLat = (shop.shop.location.coordinates[1] - validatedLocation.latitude) * Math.PI / 180;
-            const dLon = (shop.shop.location.coordinates[0] - validatedLocation.longitude) * Math.PI / 180;
-            const a = 
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(validatedLocation.latitude * Math.PI / 180) * 
-                Math.cos(shop.shop.location.coordinates[1] * Math.PI / 180) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const simpleDist = R * c;
-
-            // Only call map service if distance is significant
-            let distanceData;
-            if (simpleDist < 0.05) { // If less than 50 meters
-                distanceData = {
-                    distance: simpleDist,
-                    duration: Math.max(1, Math.round(simpleDist * 15)) // Assume walking speed of 4km/h
-                };
-            } else {
-                // Get distance using map service
-                distanceData = await mapService.getDistanceByNames(originCoords, destCoords);
-            }
+            const distanceData = await mapService.getdistancetime(originCoords, destCoords);
 
             results.push({
                 shop_name: shop.shopname,
@@ -125,47 +91,34 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
                     price: medicine.price,
                     quantity: medicine.quantity
                 },
-                distance: Number(distanceData.distance).toFixed(2), // Round to 2 decimal places
-                duration: Number(distanceData.duration).toFixed(0), // Round to nearest minute
                 coordinates: shop.shop.location.coordinates,
-                travelMode: simpleDist < 0.05 ? 'walking' : 'driving'
+                distance: distanceData.distance, // Distance in km
+                duration: distanceData.time // Duration in minutes
             });
-
-            console.log(`Distance calculation for ${shop.shopname}:`, {
-                from: originCoords,
-                to: destCoords,
-                simpleDistance: simpleDist.toFixed(3),
-                apiDistance: distanceData.distance,
-                duration: distanceData.duration,
-                travelMode: simpleDist < 0.05 ? 'walking' : 'driving'
-            });
-
         } catch (error) {
             console.error(`Error processing shop ${shop.shopname}:`, error);
+            errors.push(`Error processing shop ${shop.shopname}: ${error.message}`);
             continue;
         }
     }
 
-    if (results.length === 0) {
-        throw new Error('No medicine found in nearby stores');
+    console.log(`Results found: ${results.length}`);
+    if (!results.length) {
+        const error = new Error('No medicine found in nearby stores');
+        error.status = 404;
+        throw error;
     }
 
-    // Sort results by distance
+    // Sort results by distance (ascending)
     results.sort((a, b) => a.distance - b.distance);
+
+    // Limit results to the 5 nearest shops
+    const limitedResults = results.slice(0, 5);
 
     return {
         success: true,
-        data: {
-            totalShops: results.length,
-            averagePrice: results.length > 1 ? 
-                (results.reduce((sum, shop) => sum + shop.medicine.price, 0) / results.length).toFixed(2) : 
-                results[0].medicine.price,
-            nearestShop: {
-                distance: results[0].distance,
-                duration: results[0].duration
-            },
-            shops: results
-        }
+        data: limitedResults,
+        errors: errors.length > 0 ? errors : undefined
     };
 };
 

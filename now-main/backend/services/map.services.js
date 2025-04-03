@@ -20,22 +20,29 @@ module.exports.getaddresscoordinate = async (address) => {
 };
 
 module.exports.getdistancetime = async (origin, destination) => {
-    if (!origin || !destination) {
-        throw new Error('origin and destination are required');
-    }
-    const apiKey  = process.env.GRAPHHOPPER_KEY;
-    const url = `https://graphhopper.com/api/1/route?point=${encodeURIComponent(origin)}&point=${encodeURIComponent(destination)}&key=${apiKey}`;
-
     try {
+        console.log(`Fetching distance and time between ${origin} and ${destination}`);
+        const apiKey = process.env.GRAPHHOPPER_KEY;
+        const url = `https://graphhopper.com/api/1/route?point=${origin}&point=${destination}&profile=car&locale=en&calc_points=false&key=${apiKey}`;
+
         const response = await axios.get(url);
+
         if (response.data.paths && response.data.paths.length > 0) {
-            const { distance, time } = response.data.paths[0];
-            return { distance, time };
+            // console.log('GraphHopper API Response:', response.data);
+            const distance = response.data.paths[0].distance; // Distance in meters
+            const time = response.data.paths[0].time;         // Time in milliseconds
+
+            // console.log(`Distance: ${distance} meters, Time: ${time} milliseconds`);
+
+            return {
+                distance: (distance / 1000).toFixed(2), // Convert meters to kilometers
+                time: Math.round(time / 60000)         // Convert milliseconds to minutes
+            };
         } else {
             throw new Error('No route found for the given origin and destination');
         }
     } catch (error) {
-        console.error('Error fetching distance and time:', error);
+        console.error('Error fetching distance and time:', error.message);
         throw error;
     }
 };
