@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Star, Plus, Navigation } from 'lucide-react';
+import { Search, MapPin, Star, Plus, Navigation, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useShop } from '../../context/shopdataContext';
 
 interface MedicineResult {
   shop_name: string;
@@ -33,9 +34,9 @@ const MedicineSearch = () => {
   });
   const [locationError, setLocationError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { setSelectedShop } = useShop();
 
   useEffect(() => {
-    // Get user location when component mounts
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -65,6 +66,7 @@ const MedicineSearch = () => {
     if (!token) {
       setError('Please log in to search for medicines');
       setIsLoading(false);
+      navigate('/user/login');
       return;
     }
 
@@ -83,10 +85,11 @@ const MedicineSearch = () => {
           }
         }
       );
-      setResults(response.data.data); // Update to match the backend response structure
+      setResults(response.data.data);
     } catch (err: any) {
       if (err.response?.status === 401) {
         setError('Your session has expired. Please log in again.');
+        navigate('/user/login');
       } else {
         setError(err.response?.data?.message || 'Failed to search medicines');
       }
@@ -96,123 +99,133 @@ const MedicineSearch = () => {
     }
   };
 
-  const handlequery = (medicineName: string) => {
-    // Navigate to the specific page with the medicine name as a query parameter
-    navigate(`/medicine-details?name=${encodeURIComponent(medicineName)}`);
+  const handlequery = (medicine: MedicineResult) => {
+    setSelectedShop({
+      shopName: medicine.shop_name,
+      shopAddress: medicine.shop_address,
+      latitude: medicine.coordinates[1],
+      longitude: medicine.coordinates[0],
+    });
+    navigate('/medicine-details');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Search Medicines</h1>
-          <p className="mt-3 text-lg text-gray-500">
-            Find medicines at nearby pharmacies
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+            Find Your Medicines
+          </h1>
+          <p className="mt-4 text-xl text-gray-600">
+            Search and compare medicine prices at pharmacies near you
           </p>
         </div>
 
         {locationError && (
-          <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <Navigation className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm">{locationError}</p>
-              </div>
+          <div className="mt-6 max-w-xl mx-auto">
+            <div className="flex items-center p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <Navigation className="h-5 w-5 text-amber-500 flex-shrink-0" />
+              <p className="ml-3 text-sm text-amber-700">{locationError}</p>
             </div>
           </div>
         )}
 
         <div className="mt-8 max-w-xl mx-auto">
-          <form onSubmit={handleSearch} className="flex shadow-sm rounded-md">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Enter medicine name..."
-              className="flex-1 px-4 py-2 border-2 border-r-0 border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-            <button 
-              type="submit"
-              disabled={isLoading || (!coordinates.latitude && !coordinates.longitude)}
-              className="px-6 py-2 bg-primary-600 text-white rounded-r-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-              title={!coordinates.latitude ? "Waiting for location..." : ""}
-            >
-              {isLoading ? (
-                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-              ) : (
-                <Search className="h-5 w-5" />
-              )}
-            </button>
+          <form onSubmit={handleSearch} className="relative">
+            <div className="flex shadow-lg rounded-full overflow-hidden">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search for medicines..."
+                className="flex-1 px-6 py-4 text-lg border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <button 
+                type="submit"
+                disabled={isLoading || (!coordinates.latitude && !coordinates.longitude)}
+                className="px-8 bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                title={!coordinates.latitude ? "Waiting for location..." : ""}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Search className="h-6 w-6" />
+                )}
+              </button>
+            </div>
           </form>
         </div>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
-            {error}
+          <div className="mt-6 max-w-xl mx-auto">
+            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+              <p className="text-red-700">{error}</p>
+            </div>
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="mt-12">
           {results.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {results.map((medicine, index) => (
                 <div 
                   key={index}
-                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-                  onClick={() => handlequery(medicine.medicine.name)} // Pass the medicine name to handlequery
+                  onClick={() => handlequery(medicine)}
+                  className="bg-white rounded-2xl shadow-xl hover:shadow  -2xl transition-all duration-300 cursor-pointer overflow-hidden group"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {medicine.medicine.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Available at {medicine.shop_name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-primary-600">
-                        ₹{medicine.medicine.price}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Stock: {medicine.medicine.quantity}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-start text-sm text-gray-500">
-                    <MapPin className="h-5 w-5 text-gray-400 shrink-0 mt-0.5 mr-2" />
-                    <p>{medicine.shop_address}</p>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex items-center">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <Star
-                            key={index}
-                            className="h-4 w-4 text-yellow-400"
-                            fill="currentColor"
-                          />
-                        ))}
+                  <div className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
+                          {medicine.medicine.name}
+                        </h3>
+                        <p className="mt-2 text-sm text-gray-600">
+                          {medicine.shop_name}
+                        </p>
                       </div>
-                      <span className="ml-2 text-sm text-gray-500">
-                        {medicine.distance ? `${medicine.distance} km away` : 'Distance not available'}
-                      </span>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-blue-600">
+                          ₹{medicine.medicine.price}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          In stock: {medicine.medicine.quantity}
+                        </p>
+                      </div>
                     </div>
-                    <button className="flex items-center px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </button>
+
+                    <div className="mt-4 flex items-start space-x-2 text-sm text-gray-600">
+                      <MapPin className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <p className="leading-tight">{medicine.shop_address}</p>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center text-amber-400">
+                          <Star className="h-5 w-5 fill-current" />
+                          <Star className="h-5 w-5 fill-current" />
+                          <Star className="h-5 w-5 fill-current" />
+                          <Star className="h-5 w-5 fill-current" />
+                          <Star className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">
+                          {medicine.distance ? `${medicine.distance} km away` : 'Distance not available'}
+                        </span>
+                        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-200">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : searchQuery && !isLoading ? (
-            <div className="text-center text-gray-500 mt-8">
-              No medicines found matching your search
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-600">No medicines found matching your search</p>
+              <p className="mt-2 text-gray-500">Try searching with a different medicine name</p>
             </div>
           ) : null}
         </div>
