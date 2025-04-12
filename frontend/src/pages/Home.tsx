@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Clock, MapPin, Truck } from 'lucide-react';
 
+
 const Home = () => {
+  
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}

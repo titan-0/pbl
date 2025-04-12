@@ -19,6 +19,7 @@ interface CaptainData {
       latitude: number | null;
       longitude: number | null;
     };
+    medicines: string[];
     services: string[];
   };
 }

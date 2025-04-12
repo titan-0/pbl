@@ -122,9 +122,9 @@ const MedicineDetails = () => {
                     <Link to='/map' className="w-full bg-teal-600 text-white py-4 rounded-lg hover:bg-teal-700 transition font-medium text-lg flex items-center justify-center">
                       Pick up now
                     </Link>
-                    <button className="w-full bg-teal-600 text-white py-4 rounded-lg hover:bg-teal-700 transition font-medium text-lg">
-                      Add To Cart
-                    </button>
+                    <Link to='/placeorder' className="w-full bg-teal-600 text-white py-4 rounded-lg hover:bg-teal-700 transition font-medium text-lg flex items-center justify-center">
+                      Place order
+                    </Link>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="w-5 h-5" />

@@ -29,5 +29,5 @@ app.get('/', (req, res) => {
 app.use('/users', userroutes);
 app.use('/captains', captainroutes);
 app.use('/medicines', medicineroutes);
-app.use('maps', require('./routes/map.routes'));
+app.use('/maps', require('./routes/map.routes'));
 module.exports = app;

@@ -120,7 +120,7 @@ const Navbar = () => {
     );
   };
 
-  const protectedRoutes = ['/shop/dashboard', '/shop/profile'];
+  const protectedRoutes = ['/shop/dashboard', '/shop/profile','/shop/add-medicine'];
 
   const isDashboard = protectedRoutes.includes(location.pathname);
 

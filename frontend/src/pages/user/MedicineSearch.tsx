@@ -105,6 +105,7 @@ const MedicineSearch = () => {
       shopAddress: medicine.shop_address,
       latitude: medicine.coordinates[1],
       longitude: medicine.coordinates[0],
+      medicine_name: searchQuery
     });
     navigate('/medicine-details');
   };

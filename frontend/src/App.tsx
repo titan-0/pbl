@@ -15,6 +15,7 @@ import ShopProfile from './pages/shop/profile';
 import AddMedicine from './pages/shop/addmedicine';
 import MedicineDetails from './pages/user/MedicineDetails';
 import MapPage from './pages/user/map';
+import PlaceOrder from './pages/user/placeorder';
 
 function App() {
   // Check for user's preferred color scheme
@@ -42,6 +43,7 @@ function App() {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/shop/dashboard" element={<ShopDashboard />} />
             <Route path="/map" element={<MapPage />} />
+            <Route path="/placeorder" element={<PlaceOrder />} />
             {/* <Route path="/medicine-details/:name" element={<MedicineDetails />} /> */}
             <Route path="/medicine-details" element={<MedicineDetails />} />
           </Routes>

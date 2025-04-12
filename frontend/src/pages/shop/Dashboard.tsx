@@ -1,8 +1,49 @@
-import React from 'react';
+import React, { act, useEffect, useState } from 'react';
 import { Package2, ShoppingCart, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { useCaptain } from '../../context/CaptainContext';
+import { io } from 'socket.io-client';
+
 
 const ShopDashboard = () => {
+  const { captain } = useCaptain();
+  useEffect(() => {
+      const socket = io('http://localhost:5000', {
+        transports: ['websocket'], // Use WebSocket transport
+      });
+  
+      socket.emit('joinn', {
+        email: captain.email,
+        userType: 'store',
+      });
+  
+     
+      return () => {
+        socket.off('new-order');
+        socket.disconnect(); 
+      };
+    }, []);
+  const [inventoryStats, setInventoryStats] = useState({
+    totalTypes: 0,
+    lowStockCount: 0,
+
+  });
+  const [orders,setOrders]=useState({
+    activeOrders: 0,
+    completedOrders: 0,
+  })
+   
+
+  useEffect(() => {
+    if (captain?.medicines) {
+      const totalTypes = captain.medicines.length;
+      const lowStockCount = captain.medicines.filter(medicine => medicine.quantity < 20).length;
+
+      setInventoryStats({ totalTypes, lowStockCount });
+    }
+  }, [captain]);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -13,13 +54,13 @@ const ShopDashboard = () => {
             </h2>
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4">
-            
-            <Link to ="/shop/add-medicine"
+            <Link
+              to="/shop/add-medicine"
               type="button"
               className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               Inventory
-              </Link>
+            </Link>
           </div>
         </div>
 
@@ -32,24 +73,8 @@ const ShopDashboard = () => {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Inventory</dt>
-                    <dd className="text-lg font-medium text-gray-900">1,234</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ShoppingCart className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Active Orders</dt>
-                    <dd className="text-lg font-medium text-gray-900">12</dd>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Medicine Types</dt>
+                    <dd className="text-lg font-medium text-gray-900">{inventoryStats.totalTypes}</dd>
                   </dl>
                 </div>
               </div>
@@ -64,8 +89,24 @@ const ShopDashboard = () => {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Low Stock Items</dt>
-                    <dd className="text-lg font-medium text-gray-900">15</dd>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Low Stock Medicines</dt>
+                    <dd className="text-lg font-medium text-gray-900">{inventoryStats.lowStockCount}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ShoppingCart className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Active orders</dt>
+                    <dd className="text-lg font-medium text-gray-900">{orders.activeOrders}</dd>
                   </dl>
                 </div>
               </div>
@@ -81,7 +122,7 @@ const ShopDashboard = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Completed Orders</dt>
-                    <dd className="text-lg font-medium text-gray-900">156</dd>
+                    <dd className="text-lg font-medium text-gray-900">{orders.completedOrders}</dd>
                   </dl>
                 </div>
               </div>
