@@ -124,7 +124,7 @@ const MapPage = () => {
         <div id="map-container" className="bg-gray-200 h-96 rounded-lg">
           {/* Leaflet map will be rendered here */}
         </div>
-        <Link to="/" className="mt-4 inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        <Link to="/medicine-details" className="mt-4 inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
           Go Back
         </Link>
       </div>

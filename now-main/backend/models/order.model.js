@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose'); // Change import to CommonJS
 
 const orderSchema = new mongoose.Schema({
   email: { // store's email
@@ -18,13 +18,13 @@ const orderSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
-  address:{
-    type:String,
-    required:true
+  address: {
+    type: String,
+    required: true
   },
-  phone:{
-    type:String,
-    required:true
+  phone: {
+    type: String,
+    required: true
   },
   status: {
     type: String,
@@ -38,4 +38,4 @@ const orderSchema = new mongoose.Schema({
 });
 
 const Order = mongoose.model('Order', orderSchema);
-export default Order;
+module.exports = Order; // Change export to CommonJS

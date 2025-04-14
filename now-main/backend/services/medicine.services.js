@@ -44,7 +44,7 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
                 $maxDistance: radius * 1000 // Convert km to meters
             }
         }
-    }).select('shopname shop.location shop.shop_address medicines');
+    }).select('shopname shop.location shop.shop_address medicines email phoneNumber');
 
     console.log(`Shops found: ${shops.length}`);
     if (!shops.length) {
@@ -91,6 +91,8 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
                     price: medicine.price,
                     quantity: medicine.quantity
                 },
+                email: shop.email,
+                phoneNumber: shop.phoneNumber,
                 coordinates: shop.shop.location.coordinates,
                 distance: distanceData.distance, // Distance in km
                 duration: distanceData.time // Duration in minutes

@@ -103,6 +103,8 @@ const MedicineSearch = () => {
     setSelectedShop({
       shopName: medicine.shop_name,
       shopAddress: medicine.shop_address,
+      email: medicine.email,
+      phone: medicine.phoneNumber, 
       latitude: medicine.coordinates[1],
       longitude: medicine.coordinates[0],
       medicine_name: searchQuery

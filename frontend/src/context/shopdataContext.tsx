@@ -43,5 +43,10 @@ export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
 }; // Fixed missing closing brace for the function
 
 export const useShop = () => {
+  const context = useContext(ShopContext);
+   if (!context) {
+     throw new Error('useUser must be used within a UserProvider');
+   }
+   console.log('User data in context:', context.selectedShop);
   return useContext(ShopContext);
 };

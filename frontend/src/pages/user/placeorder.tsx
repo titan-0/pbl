@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 const PlaceOrder = () => {
 
   const { user } = useUser();
-
+  const [number,setNumber]=useState<string>('');
   const { selectedShop } = useShop();
   const [orderDetails, setOrderDetails] = useState({
     medicineName: selectedShop.medicine_name, // Updated to use selectedShop.medicine_name
@@ -44,20 +44,32 @@ const PlaceOrder = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Order placed:', orderDetails);
-    setOrderPlaced(true);
+    
     const socket = io('http://localhost:5000', {
       transports: ['websocket'], // Use WebSocket transport
     });
 
     socket.emit('join', {
       email: user.email,
+      number: number,
       userType: 'user',
       storeemail: selectedShop.email,
       medicineName: selectedShop.medicine_name,
-      quantiy: orderDetails.quantity,
+      quantity: orderDetails.quantity,
       address: orderDetails.address,
 
     });
+    socket.on('order-confirmation', (data) => {
+      console.log(data.message);     // "Order placed successfully!"
+      console.log(data.success); 
+      if(data.success){
+        setOrderPlaced(true);
+      }  
+      else{
+        alert(data.message); // Display error message
+      }  
+  });
+     
   };
 
   return (
@@ -100,10 +112,16 @@ const PlaceOrder = () => {
                 </div>
                 <div className="mb-4">
                   <label htmlFor="medicineName" className="block text-sm font-medium text-gray-700">
-                    Contack Number
+                    Contact Number
                   </label>
-                  <span className="mt-1 block w-full border-gray-300 h-7 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  > </span>
+                  <input placeholder='Enter your phone number'  id="number"
+                  name="number"
+                  type="number"
+                  autoComplete="number"
+                  required
+                  value={number}
+                  onChange={(e) => setNumber(e.target.value)} className="mt-1 block w-full border-gray-300 h-7 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  > </input>
                 </div>
                 <div className="mb-4">
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700">
