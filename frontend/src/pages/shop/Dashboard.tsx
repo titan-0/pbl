@@ -1,39 +1,48 @@
 import React, { act, useEffect, useState } from 'react';
 import { Package2, ShoppingCart, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios';
 import { useCaptain } from '../../context/CaptainContext';
 import { io } from 'socket.io-client';
 
-
 const ShopDashboard = () => {
   const { captain } = useCaptain();
-  useEffect(() => {
-      const socket = io('http://localhost:5000', {
-        transports: ['websocket'], // Use WebSocket transport
-      });
-  
-      socket.emit('joinn', {
-        email: captain.email,
-        userType: 'store',
-      });
-  
-     
-      return () => {
-        socket.off('new-order');
-        socket.disconnect(); 
-      };
-    }, []);
   const [inventoryStats, setInventoryStats] = useState({
     totalTypes: 0,
     lowStockCount: 0,
-
   });
-  const [orders,setOrders]=useState({
+  const [orders, setOrders] = useState({
     activeOrders: 0,
     completedOrders: 0,
-  })
-   
+  });
+  const [activeOrdersList, setActiveOrdersList] = useState([]);
+  const [showActiveOrders, setShowActiveOrders] = useState(false);
+
+  useEffect(() => {
+    const socket = io('http://localhost:5000', {
+      transports: ['websocket'], // Use WebSocket transport
+    });
+    socket.emit('joinn', {
+      email: captain.email,
+      userType: 'store',
+    });
+
+    socket.on('pending-orders', (data) => {
+      console.log('Pending Orders:', data);
+      if (data.success) {
+        setOrders((prevOrders) => ({
+          ...prevOrders,
+          activeOrders: data.orders.length,
+        }));
+        setActiveOrdersList(data.orders);
+      }
+    });
+
+    return () => {
+      socket.off('pending-orders');
+      socket.disconnect();
+    };
+  }, [captain.email]);
 
   useEffect(() => {
     if (captain?.medicines) {
@@ -43,6 +52,10 @@ const ShopDashboard = () => {
       setInventoryStats({ totalTypes, lowStockCount });
     }
   }, [captain]);
+
+  const handleActiveOrdersClick = () => {
+    setShowActiveOrders(!showActiveOrders);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -65,7 +78,7 @@ const ShopDashboard = () => {
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <button className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -79,9 +92,9 @@ const ShopDashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </button>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <button className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -95,9 +108,11 @@ const ShopDashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </button>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <button 
+          className="bg-white overflow-hidden shadow rounded-lg"
+          onClick={handleActiveOrdersClick}>
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -111,9 +126,9 @@ const ShopDashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </button>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <button className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -127,8 +142,48 @@ const ShopDashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </button>
         </div>
+
+        {showActiveOrders && (
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:px-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Active Orders</h3>
+              </div>
+              <ul className="divide-y divide-gray-200">
+                {activeOrdersList.map((order, index) => (
+                  <li key={index}>
+                    <div className="px-4 py-4 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-primary-600 truncate">
+                          {order.medicineName} - {order.quantity}
+                        </div>
+                        <div className="ml-2 flex-shrink-0 flex">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Pending
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2 sm:flex sm:justify-between">
+                        <div className="sm:flex">
+                          <p className="flex items-center text-sm text-gray-500">
+                            Address: {order.address}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                          <p>
+                            Phone: {order.phone}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8">
           <div className="bg-white shadow overflow-hidden sm:rounded-md">

@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const port = 5000;
 const Order = require('./models/order.model');
 
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -44,9 +45,28 @@ io.on('connection', (socket) => {
         }
     });
 
-
-    socket.on('joinn', (details) => {
-        console.log(' joined', details)
+    socket.on('joinn', async (details) => {
+        console.log('joined', details);
+        if (!details.email) {
+            console.log('Invalid email:', details);
+            return;
+        }
+        try {
+            const pendingOrders = await Order.find({ 
+                email: details.email, 
+                status: { $regex: /^pending$/i } // Case-insensitive match for 'pending'
+            });
+            socket.emit('pending-orders', {
+                success: true,
+                orders: pendingOrders,
+            });
+        } catch (err) {
+            console.error('Error fetching pending orders:', err);
+            socket.emit('pending-orders', {
+                success: false,
+                message: 'Failed to fetch pending orders. Please try again later.',
+            });
+        }
     });
 
     socket.on('disconnect', () => {
