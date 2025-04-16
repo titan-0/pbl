@@ -1,4 +1,3 @@
-import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Clock, MapPin, Truck } from 'lucide-react';
 

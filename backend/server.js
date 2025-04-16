@@ -1,7 +1,7 @@
 const http = require('http');
 const app = require('./app');
 const { Server } = require('socket.io');
-const port = 5000;
+const port = process.env.PORT || 5000;
 const Order = require('./models/order.model');
 
 
