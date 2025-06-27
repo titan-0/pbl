@@ -68,7 +68,7 @@ async function cleanWithLLM(promptText) {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "http://localhost", // recommended
-        "User-Agent": "my-med-app (your@email.com)"
+        "User-Agent": "sianfkp63@gmail.com"
       }
     }
   );

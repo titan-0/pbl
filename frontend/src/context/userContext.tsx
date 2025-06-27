@@ -20,9 +20,18 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserData | null>(() => {
-    const storedUser = localStorage.getItem('user');
-    console.log('Stored user data:', JSON.parse(storedUser || 'null'));
-    return storedUser ? JSON.parse(storedUser) : null;
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser && parsedUser.fullname) {
+          return parsedUser;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing stored user data:', error);
+    }
+    return null;
   });
 
   const logout = () => {

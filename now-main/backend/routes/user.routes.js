@@ -19,4 +19,12 @@ usercontroller.loginuser
 router.get('/profile',authmiddleware.authuser,usercontroller.getuserprofile)
 router.get('/logout',authmiddleware.authuser,usercontroller.logoutuser)
 
+router.post('/PlaceOrder',[
+    body('storeemail').isEmail().withMessage('Invalid Store Email'),
+    body('medicineName').isLength({min: 3}).withMessage('Medicine name must be atleast 3 characters long'),
+    body('quantity').isNumeric().withMessage('Quantity must be a number'),
+    body('address').isLength({min: 10}).withMessage('Address must be atleast 10 characters long'),
+    body('number').isMobilePhone().withMessage('Invalid phone number')
+],usercontroller.placeorder);
+
 module.exports = router;

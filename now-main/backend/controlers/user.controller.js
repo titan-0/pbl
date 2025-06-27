@@ -126,6 +126,31 @@ module.exports.searchNearestMedicine = async (req, res) => {
     }
 };
 
+module.exports.placeorder = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    console.log(req.body);
+    const { user,storeemail, medicineName, quantity, address, number } = req.body;
+
+    try {
+        const order = await userservies.placeOrder({
+            email:user,
+            storeemail:storeemail,
+            medicineName,
+            quantity,
+            address,
+            number
+        });
+
+        res.status(201).json({ order });
+    } catch (error) {
+        console.error('Error placing order:', error);
+        res.status(500).json({ error: 'Failed to place order. Please try again later.' });
+    }
+}
+
 
 
 

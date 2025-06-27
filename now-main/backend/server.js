@@ -15,36 +15,6 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log('a new user connected', socket.id);
 
-    socket.on('join', async (details) => {
-        if (!details.email || !details.storeemail || !details.medicineName || !details.quantity || !details.address || !details.number) {
-            console.log('Invalid order details:', details);
-            return;
-        }
-        console.log('Order details:', details);        
-        try {
-            const newOrder = new Order({
-                email: details.storeemail,
-                useremail: details.email,
-                medicineName: details.medicineName,
-                quantity: details.quantity,
-                address: details.address,
-                phone: details.number
-            });
-            await newOrder.save();
-            console.log('Order created successfully');
-            socket.emit('order-confirmation', {
-                success: true,
-                message: 'Order placed successfully!',
-            });
-        } catch (err) {
-            console.error('Error creating order:', err);
-            socket.emit('order-confirmation', { 
-                success: false ,
-                message: 'Failed to place order. Please try again later.'
-            });
-        }
-    });
-
     socket.on('joinn', async (details) => {
         console.log('joined', details);
         if (!details.email) {

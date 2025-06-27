@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useShop } from '../../context/shopdataContext';
 import { useUser } from '../../context/userContext';
-import { io } from 'socket.io-client';
-import { useEffect } from 'react';
+import axios from 'axios';
 
 const PlaceOrder = () => {
 
   const { user } = useUser();
-  const [number,setNumber]=useState<string>('');
+  const [number, setNumber] = useState<string>('');
   const { selectedShop } = useShop();
   const [orderDetails, setOrderDetails] = useState({
     medicineName: selectedShop.medicine_name, // Updated to use selectedShop.medicine_name
@@ -44,32 +43,25 @@ const PlaceOrder = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Order placed:', orderDetails);
-    
-    const socket = io('http://localhost:5000', {
-      transports: ['websocket'], // Use WebSocket transport
-    });
 
-    socket.emit('join', {
-      email: user.email,
-      number: number,
-      userType: 'user',
+    const response = axios.post(`${import.meta.env.VITE_BASE_URL}/users/PlaceOrder`, {
+      user:user?.email,
       storeemail: selectedShop.email,
-      medicineName: selectedShop.medicine_name,
+      medicineName: orderDetails.medicineName,
       quantity: orderDetails.quantity,
       address: orderDetails.address,
+      number: number,
 
     });
-    socket.on('order-confirmation', (data) => {
-      console.log(data.message);     // "Order placed successfully!"
-      console.log(data.success); 
-      if(data.success){
+    response
+      .then((res) => {
+        console.log('Order placed successfully:', res.data);
         setOrderPlaced(true);
-      }  
-      else{
-        alert(data.message); // Display error message
-      }  
-  });
-     
+      })
+      .catch((error) => {
+        console.error('Error placing order:', error);
+        alert('Failed to place order. Please try again later.');
+      });
   };
 
   return (
@@ -114,13 +106,13 @@ const PlaceOrder = () => {
                   <label htmlFor="medicineName" className="block text-sm font-medium text-gray-700">
                     Contact Number
                   </label>
-                  <input placeholder='Enter your phone number'  id="number"
-                  name="number"
-                  type="number"
-                  autoComplete="number"
-                  required
-                  value={number}
-                  onChange={(e) => setNumber(e.target.value)} className="mt-1 block w-full border-gray-300 h-7 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  <input placeholder='Enter your phone number' id="number"
+                    name="number"
+                    type="number"
+                    autoComplete="number"
+                    required
+                    value={number}
+                    onChange={(e) => setNumber(e.target.value)} className="mt-1 block w-full border-gray-300 h-7 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   > </input>
                 </div>
                 <div className="mb-4">
