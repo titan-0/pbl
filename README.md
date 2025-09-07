@@ -1,4 +1,4 @@
-🏥 Online Healthcare Platform
+# MediConnect
 
 A full-stack healthcare web application built with the MERN stack that connects users with local pharmacies. The platform supports both medicine doorstep delivery and pickup options from nearby stores, providing real-time medicine availability and route optimization using GraphHopper. It includes user and shop owner portals with authentication, responsive UI, and live order tracking via WebSockets.
 
