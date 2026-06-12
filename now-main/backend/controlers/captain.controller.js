@@ -6,6 +6,7 @@ const medicineservice = require('../services/medicine.services');
 const ShopModel = require('../models/medicaldata');
 const captainmodel = require('../models/captain.model');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 
 module.exports.getCaptain = async (req, res) => {
@@ -25,7 +26,7 @@ module.exports.getCaptain = async (req, res) => {
 
         res.json({ captain });
     } catch (error) {
-        console.error('Error fetching captain data:', error);
+        logger.error('captain_fetch_failed', { error });
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -76,14 +77,14 @@ module.exports.registercaptain = async (req, res, next) => {
 
         // Generate token
         const token = newCaptain.generateAuthToken();
-        console.log('Captain registered successfully:', newCaptain);
+        logger.info('captain_registered', { captainId: newCaptain._id, email: newCaptain.email });
         return res.status(201).json({
             success: true,
             token,
             captain: newCaptain
         });
     } catch (error) {
-        console.error('Registration error:', error);
+        logger.error('captain_registration_failed', { error });
         return res.status(500).json({
             success: false,
             message: error.message || 'Internal server error'
@@ -99,7 +100,6 @@ module.exports.logincaptain = async (req, res, next) => {
         }
 
         const { email, password } = req.body;
-        console.log('Login attempt for:', email); // Debug log
 
         // Find captain and include password
         const captain = await captainmodel.findOne({ email }).select('+password');
@@ -129,7 +129,7 @@ module.exports.logincaptain = async (req, res, next) => {
             captain
         });
     } catch (error) {
-        console.error('Login error:', error); // Debug log
+        logger.error('captain_login_failed', { error });
         return res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -251,7 +251,11 @@ module.exports.addmedicine = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error adding medicine:', error);
+        logger.error('add_medicine_failed', {
+            captainId: req.captain?._id,
+            medicineName: req.body?.medicine_name,
+            error
+        });
         return res.status(500).json({
             success: false,
             message: 'Internal server error',

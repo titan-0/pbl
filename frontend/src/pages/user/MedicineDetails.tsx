@@ -4,9 +4,54 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../../context/shopdataContext';
 import { ClockIcon } from '@heroicons/react/24/outline'; // Example icons
 
+interface MedicineDetailsData {
+  name: string;
+  brandName?: string;
+  description: string;
+  uses: string;
+  limitations: string;
+  precautions: string;
+}
+
+const medicineDetailsCache = new Map<string, MedicineDetailsData>();
+const medicineDetailsRequests = new Map<string, Promise<MedicineDetailsData>>();
+
+async function getMedicineDetails(medicineName: string): Promise<MedicineDetailsData> {
+  if (medicineDetailsCache.has(medicineName)) {
+    return medicineDetailsCache.get(medicineName)!;
+  }
+
+  const existingRequest = medicineDetailsRequests.get(medicineName);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = axios.post(
+    `${import.meta.env.VITE_BASE_URL}/api/medicine-details`,
+    {
+      medicine_name: medicineName
+    },
+    {
+      timeout: 10000
+    }
+  ).then((response) => {
+    if (!response.data || Object.keys(response.data).length === 0) {
+      throw new Error('No details found for the requested medicine.');
+    }
+
+    medicineDetailsCache.set(medicineName, response.data as MedicineDetailsData);
+    return response.data as MedicineDetailsData;
+  }).finally(() => {
+    medicineDetailsRequests.delete(medicineName);
+  });
+
+  medicineDetailsRequests.set(medicineName, request);
+  return request;
+}
+
 const MedicineDetails = () => {
   const { selectedShop } = useShop();
-  const [medicineDetails, setMedicineDetails] = useState<any>(null); // Use 'any' or a more specific type
+  const [medicineDetails, setMedicineDetails] = useState<MedicineDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,33 +64,54 @@ const MedicineDetails = () => {
   };
 
   useEffect(() => {
+    const medicineName = selectedShop?.medicine_name?.trim();
+    let isActive = true;
+
+    if (!medicineName) {
+      setMedicineDetails(null);
+      setLoading(false);
+      setError('Medicine name not provided.');
+      return () => {
+        isActive = false;
+      };
+    }
+
     const fetchMedicineDetails = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.post('http://localhost:5000/api/medicine-details', {
-          medicine_name: selectedShop?.medicine_name
-        });
+        const data = await getMedicineDetails(medicineName);
 
-        if (!response.data || Object.keys(response.data).length === 0) {
-          setError('No details found for the requested medicine.');
+        if (!isActive) {
           return;
         }
 
-        setMedicineDetails(response.data);
-      } catch (err: any) {
-        setError('Failed to fetch medicine details. Please try again later.');
+        setMedicineDetails(data);
+      } catch (err: unknown) {
+        if (isActive) {
+          const errorMessage = axios.isAxiosError(err)
+            ? (err.code === 'ECONNABORTED'
+              ? 'Medicine details request timed out. Please try again.'
+              : err.response?.data?.error || err.message)
+            : err instanceof Error
+              ? err.message
+              : 'Failed to fetch medicine details. Please try again later.';
+
+          setMedicineDetails(null);
+          setError(errorMessage);
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
-    if (selectedShop?.medicine_name) {
-      fetchMedicineDetails();
-    } else {
-      setLoading(false);
-      setError('Medicine name not provided.');
-    }
+    fetchMedicineDetails();
+
+    return () => {
+      isActive = false;
+    };
   }, [selectedShop?.medicine_name]);
 
   if (loading) {

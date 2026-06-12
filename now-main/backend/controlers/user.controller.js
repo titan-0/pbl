@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const blacklisttokenmodel = require('../models/blacklist.model');
 const medi = require('../services/medicine.services');
 const { findNearestMedicinesByName } = require('../services/medicine.services');
+const logger = require('../utils/logger');
 
 module.exports.registeruser = async (req, res, next) => {
     const errors = validationResult(req);
@@ -118,7 +119,7 @@ module.exports.searchNearestMedicine = async (req, res) => {
         return res.status(200).json(searchResult);
 
     } catch (error) {
-        console.error('Search error:', error);
+        logger.error('nearest_medicine_search_failed', { error, body: req.body });
         return res.status(error.status || 500).json({
             success: false,
             message: error.message || 'Internal server error'
@@ -131,7 +132,6 @@ module.exports.placeorder = async (req, res, next) => {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    console.log(req.body);
     const { user,storeemail, medicineName, quantity, address, number } = req.body;
 
     try {
@@ -146,7 +146,12 @@ module.exports.placeorder = async (req, res, next) => {
 
         res.status(201).json({ order });
     } catch (error) {
-        console.error('Error placing order:', error);
+        logger.error('place_order_failed', {
+            user,
+            storeemail,
+            medicineName,
+            error
+        });
         res.status(500).json({ error: 'Failed to place order. Please try again later.' });
     }
 }

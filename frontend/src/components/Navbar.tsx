@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Pill, User, Store, Menu, Sun, Moon, LogOut, ShoppingCart, Search, PackageSearch } from 'lucide-react';
+import { Pill, User, Store, Menu, Sun, Moon, LogOut, Search} from 'lucide-react';
 import { useCaptain } from '../context/CaptainContext';
 import { useUser } from '../context/userContext';
 import axios from 'axios';
@@ -90,13 +90,7 @@ const Navbar = () => {
             <User className="h-5 w-5" />
             <span>Welcome, {user.fullname.firstname}</span>
           </Link>
-          <Link
-            to="/user/orders"
-            className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            <span>My Orders</span>
-          </Link>
+          
         </>
       );
     }
@@ -146,13 +140,7 @@ const Navbar = () => {
                   <Search className="h-5 w-5" />
                   <span>Find Medicines</span>
                 </Link>
-                <Link
-                  to="/order-tracking"
-                  className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  <PackageSearch className="h-5 w-5" />
-                  <span>Track Order</span>
-                </Link>
+
               </>
             )}
             <div className="flex items-center space-x-4">
@@ -206,13 +194,7 @@ const Navbar = () => {
                   <Search className="h-5 w-5" />
                   <span>Find Medicines</span>
                 </Link>
-                <Link
-                  to="/order-tracking"
-                  className="flex items-center space-x-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  <PackageSearch className="h-5 w-5" />
-                  <span>Track Order</span>
-                </Link>
+               
               </>
             )}
             {renderAuthLinks()}

@@ -1,5 +1,6 @@
 const mapservice = require('../services/map.services');
 const { validationResult } = require('express-validator');
+const logger = require('../utils/logger');
 
 module.exports.getaddresscoordinate = async (req, res, next) => {
     const errors = validationResult(req);
@@ -57,7 +58,7 @@ module.exports.getsuggestions = async (req, res, next) => {
         const suggestions = await mapservice.getsuggestions(input);
         res.status(200).json(suggestions);
     } catch (error) {
-        console.error(error);
+        logger.error('map_suggestions_failed', { input, error });
         res.status(500).json({ message: 'Internal server error' });
     }
 };

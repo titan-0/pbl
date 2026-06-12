@@ -1,11 +1,12 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Captain = require('../models/captain.model');
+const logger = require('../utils/logger');
 
 async function updateShopLocations() {
     try {
         await mongoose.connect(process.env.DB_CONNECT);
-        console.log('Connected to MongoDB');
+        logger.info('migration_database_connected');
 
         const result = await Captain.updateMany(
             { 'shop.location.lat': { $exists: true } },
@@ -22,17 +23,17 @@ async function updateShopLocations() {
             }]
         );
 
-        console.log(`Updated ${result.modifiedCount} documents`);
+        logger.info('migration_documents_updated', { modifiedCount: result.modifiedCount });
 
         // Ensure the 2dsphere index exists
         await Captain.collection.createIndex({ 'shop.location': '2dsphere' });
-        console.log('Created 2dsphere index');
+        logger.info('migration_index_created', { index: 'shop.location_2dsphere' });
 
     } catch (error) {
-        console.error('Error:', error);
+        logger.error('migration_failed', { error });
     } finally {
         await mongoose.disconnect();
-        console.log('Disconnected from MongoDB');
+        logger.info('migration_database_disconnected');
     }
 }
 

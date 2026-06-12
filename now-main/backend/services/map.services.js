@@ -1,5 +1,6 @@
 const axios = require('axios');
 const captainmodel = require('../models/captain.model');
+const logger = require('../utils/logger');
 
 module.exports.getaddresscoordinate = async (address) => {
     const apiKey  = process.env.GRAPHHOPPER_KEY;
@@ -14,25 +15,22 @@ module.exports.getaddresscoordinate = async (address) => {
             throw new Error('No coordinates found for the given address');
         }
     } catch (error) {
-        console.error('Error fetching coordinates:', error);
+        logger.error('map_coordinates_fetch_failed', { address, error });
         throw error;
     }
 };
 
 module.exports.getdistancetime = async (origin, destination) => {
     try {
-        console.log(`Fetching distance and time between ${origin} and ${destination}`);
+        logger.debug('map_distance_fetch_started', { origin, destination });
         const apiKey = process.env.GRAPHHOPPER_KEY;
         const url = `https://graphhopper.com/api/1/route?point=${origin}&point=${destination}&profile=car&locale=en&calc_points=false&key=${apiKey}`;
 
         const response = await axios.get(url);
 
         if (response.data.paths && response.data.paths.length > 0) {
-            // console.log('GraphHopper API Response:', response.data);
             const distance = response.data.paths[0].distance; // Distance in meters
             const time = response.data.paths[0].time;         // Time in milliseconds
-
-            // console.log(`Distance: ${distance} meters, Time: ${time} milliseconds`);
 
             return {
                 distance: (distance / 1000).toFixed(2), // Convert meters to kilometers
@@ -42,7 +40,7 @@ module.exports.getdistancetime = async (origin, destination) => {
             throw new Error('No route found for the given origin and destination');
         }
     } catch (error) {
-        console.error('Error fetching distance and time:', error.message);
+        logger.error('map_distance_fetch_failed', { origin, destination, error });
         throw error;
     }
 };
@@ -68,7 +66,7 @@ module.exports.getDistanceByNames = async (originName, destinationName) => {
             throw new Error('No route found for the given origin and destination');
         }
     } catch (error) {
-        console.error('Error fetching distance by names:', error);
+        logger.error('map_distance_by_name_failed', { originName, destinationName, error });
         throw error;
     }
 };
@@ -98,7 +96,7 @@ module.exports.getsuggestions = async (input) => {
             throw new Error('No suggestions found for the given input');
         }
     } catch (error) {
-        console.error('Error fetching suggestions:', error);
+        logger.error('map_suggestions_fetch_failed', { input, error });
         throw error;
     }
 };

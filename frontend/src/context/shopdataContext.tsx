@@ -47,6 +47,5 @@ export const useShop = () => {
    if (!context) {
      throw new Error('useUser must be used within a UserProvider');
    }
-   console.log('User data in context:', context.selectedShop);
-  return useContext(ShopContext);
+  return context;
 };

@@ -1,20 +1,21 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 function connectdb() {
     const dbUri = process.env.DB_CONNECT;
 
     if (!dbUri) {
-        console.error('Error: DB_CONNECT environment variable is not defined');
+        logger.error('database_config_missing', { missingEnv: 'DB_CONNECT' });
         return;
     }
 
     mongoose.connect(dbUri)
         .then(() => {
-            console.log('Connected to DB');
+            logger.info('database_connected');
         })
         .catch(err => {
-            console.error('Error connecting to DB:', err);
+            logger.error('database_connection_failed', { error: err });
         });
 }
 

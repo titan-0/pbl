@@ -2,6 +2,7 @@ const { checkLocation } = require('../utils/location');
 const Captain = require('../models/captain.model');
 
 const mapService = require('./map.services');
+const logger = require('../utils/logger');
 
 const findMedicineByName = async (shop_name, medicine_name) => {
     const shop = await Captain.findOne({ shop_name });
@@ -27,12 +28,13 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
         throw error;
     }
 
-    console.log('Validated user location:', userLocation);
-    console.log('Searching for medicine:', medicine_name);
+    logger.debug('nearest_medicine_search_started', {
+        userLocation,
+        medicineName: medicine_name,
+        radius
+    });
 
     const validatedLocation = checkLocation(userLocation.longitude, userLocation.latitude);
-
-    console.log('Validated location:', validatedLocation);
 
     const shops = await Captain.find({
         'shop.location': {
@@ -46,7 +48,10 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
         }
     }).select('shopname shop.location shop.shop_address medicines email phoneNumber');
 
-    console.log(`Shops found: ${shops.length}`);
+    logger.info('nearest_medicine_candidate_shops_loaded', {
+        medicineName: medicine_name,
+        shopCount: shops.length
+    });
     if (!shops.length) {
         const error = new Error('No shops found in the specified radius');
         error.status = 404;
@@ -58,10 +63,7 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
 
     for (const shop of shops) {
         try {
-            console.log(`Checking shop: ${shop.shopname}`);
-            
             if (!shop.medicines || shop.medicines.length === 0) {
-                console.log(`No medicines found in shop: ${shop.shopname}`);
                 errors.push(`No medicines in shop: ${shop.shopname}`);
                 continue;
             }
@@ -71,11 +73,8 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
             );
 
             if (!medicine) {
-                console.log(`Medicine '${medicine_name}' not found in shop: ${shop.shopname}`);
                 continue;
             }
-
-            console.log(`Medicine '${medicine_name}' found in shop: ${shop.shopname}`);
 
             // Get the distance between the user and the shop using mapService
             const originCoords = `${validatedLocation.latitude},${validatedLocation.longitude}`;
@@ -98,13 +97,20 @@ const findNearestMedicinesByName = async (userLocation, medicine_name, radius = 
                 duration: distanceData.time // Duration in minutes
             });
         } catch (error) {
-            console.error(`Error processing shop ${shop.shopname}:`, error);
+            logger.error('nearest_medicine_shop_processing_failed', {
+                shopName: shop.shopname,
+                medicineName: medicine_name,
+                error
+            });
             errors.push(`Error processing shop ${shop.shopname}: ${error.message}`);
             continue;
         }
     }
 
-    console.log(`Results found: ${results.length}`);
+    logger.info('nearest_medicine_search_completed', {
+        medicineName: medicine_name,
+        resultCount: results.length
+    });
     if (!results.length) {
         const error = new Error('No medicine found in nearby stores');
         error.status = 404;

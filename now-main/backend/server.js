@@ -3,6 +3,7 @@ const app = require('./app');
 const { Server } = require('socket.io');
 const port = 5000;
 const Order = require('./models/order.model');
+const logger = require('./utils/logger');
 
 
 const server = http.createServer(app);
@@ -13,12 +14,11 @@ const io = new Server(server, {
     }
 });
 io.on('connection', (socket) => {
-    console.log('a new user connected', socket.id);
+    logger.info('socket_connected', { socketId: socket.id });
 
     socket.on('joinn', async (details) => {
-        console.log('joined', details);
         if (!details.email) {
-            console.log('Invalid email:', details);
+            logger.warn('socket_join_rejected', { socketId: socket.id, reason: 'Missing email' });
             return;
         }
         try {
@@ -31,7 +31,7 @@ io.on('connection', (socket) => {
                 orders: pendingOrders,
             });
         } catch (err) {
-            console.error('Error fetching pending orders:', err);
+            logger.error('pending_orders_fetch_failed', { socketId: socket.id, email: details.email, error: err });
             socket.emit('pending-orders', {
                 success: false,
                 message: 'Failed to fetch pending orders. Please try again later.',
@@ -40,14 +40,23 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('user disconnected', socket.id);
+        logger.info('socket_disconnected', { socketId: socket.id });
     });
     socket.on('order', (data) => {
-        console.log(data);
-
+        logger.debug('socket_order_event', { socketId: socket.id, payload: data });
     });
 })
 
 server.listen(port, () => {
-    console.log(`server is running on port ${port}`);
+    logger.info('server_started', { port });
+});
+
+process.on('unhandledRejection', (reason) => {
+    logger.error('unhandled_rejection', {
+        error: reason instanceof Error ? reason : new Error(String(reason))
+    });
+});
+
+process.on('uncaughtException', (error) => {
+    logger.error('uncaught_exception', { error });
 });

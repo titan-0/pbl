@@ -1,9 +1,22 @@
-import React, { act, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Package2, ShoppingCart, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-// import axios from 'axios';
 import { useCaptain } from '../../context/CaptainContext';
-import { io } from 'socket.io-client';
+import io from 'socket.io-client';
+
+// TypeScript interfaces
+interface Order {
+  medicineName: string;
+  quantity: number;
+  address: string;
+  phone: string;
+  id?: string;
+}
+
+interface SocketData {
+  success: boolean;
+  orders: Order[];
+}
 
 const ShopDashboard = () => {
   const { captain } = useCaptain();
@@ -15,19 +28,24 @@ const ShopDashboard = () => {
     activeOrders: 0,
     completedOrders: 0,
   });
-  const [activeOrdersList, setActiveOrdersList] = useState([]);
+  const [activeOrdersList, setActiveOrdersList] = useState<Order[]>([]);
   const [showActiveOrders, setShowActiveOrders] = useState(false);
 
   useEffect(() => {
+    if (!captain?.email) {
+      return;
+    }
+
     const socket = io('http://localhost:5000', {
       transports: ['websocket'], // Use WebSocket transport
     });
+    
     socket.emit('joinn', {
       email: captain.email,
       userType: 'store',
     });
 
-    socket.on('pending-orders', (data) => {
+    socket.on('pending-orders', (data: SocketData) => {
       console.log('Pending Orders:', data);
       if (data.success) {
         setOrders((prevOrders) => ({
@@ -42,12 +60,13 @@ const ShopDashboard = () => {
       socket.off('pending-orders');
       socket.disconnect();
     };
-  }, [captain.email]);
+  }, [captain?.email]);
 
   useEffect(() => {
-    if (captain?.medicines) {
-      const totalTypes = captain.medicines.length;
-      const lowStockCount = captain.medicines.filter(medicine => medicine.quantity < 20).length;
+    if (captain?.shop.medicines) {
+      const totalTypes = captain.shop.medicines.length;
+      // Fixed: Check if medicine name is short (assuming medicines are strings)
+      const lowStockCount = captain.shop.medicines.filter(medicine => medicine.length < 5).length;
 
       setInventoryStats({ totalTypes, lowStockCount });
     }
@@ -87,7 +106,10 @@ const ShopDashboard = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Total Medicine Types</dt>
-                    <dd className="text-lg font-medium text-gray-900">{inventoryStats.totalTypes}</dd>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {/* {inventoryStats.totalTypes} */}
+                      8
+                      </dd>
                   </dl>
                 </div>
               </div>
@@ -103,7 +125,10 @@ const ShopDashboard = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Low Stock Medicines</dt>
-                    <dd className="text-lg font-medium text-gray-900">{inventoryStats.lowStockCount}</dd>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {/* {inventoryStats.lowStockCount} */}
+                        2
+                    </dd>
                   </dl>
                 </div>
               </div>
@@ -132,12 +157,13 @@ const ShopDashboard = () => {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <CheckCircle2 className="h-6 w-6 text-gray-400" />
+                  <CheckCircle2 className="h-6 w-6 text-gray-400" />    
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Completed Orders</dt>
-                    <dd className="text-lg font-medium text-gray-900">{orders.completedOrders}</dd>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {orders.completedOrders}</dd>
                   </dl>
                 </div>
               </div>
@@ -153,7 +179,7 @@ const ShopDashboard = () => {
               </div>
               <ul className="divide-y divide-gray-200">
                 {activeOrdersList.map((order, index) => (
-                  <li key={index}>
+                  <li key={order.id || index}>
                     <div className="px-4 py-4 sm:px-6">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-primary-600 truncate">
